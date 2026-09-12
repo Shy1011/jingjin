@@ -6,7 +6,7 @@
  *   不改的话，手机可能一直用着旧版本的缓存。
  */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'zwjj-' + VERSION;
 
 const ASSETS = [
