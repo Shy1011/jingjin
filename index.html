@@ -186,6 +186,9 @@
   .rec-manage-name::after { content:'✏️'; font-size:11px; margin-left:6px; opacity:0.5; }
   .rec-manage-count { flex-shrink:0; font-size:11px; color:var(--muted); }
   .rec-manage-empty { font-size:12px; color:var(--muted); text-align:center; padding:8px 0; }
+  .rec-manage-input { flex:1; min-width:0; padding:7px 10px; background:#0f0f0f; border:1px solid var(--accent); border-radius:6px; color:var(--text); font-size:13px; outline:none; }
+  .rec-manage-save { flex-shrink:0; padding:7px 12px; background:var(--accent); color:#000; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }
+  .rec-manage-cancel { flex-shrink:0; padding:7px 12px; background:transparent; color:var(--muted); border:1px solid var(--undone); border-radius:6px; font-size:12px; cursor:pointer; }
   /* Record stats card */
   .rec-stats { background:var(--card); border-radius:12px; padding:12px 14px; margin-bottom:14px; }
   .rec-stats-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -1106,10 +1109,12 @@ let recStatsOpen = localStorage.getItem('rec_stats_open') !== '0';   // 默认�
 // 记录表单里用户亲手改过的字段，切走再回来不能给他清掉
 let recDirty = {count:false, time:false};
 let recManageOpen = false;
+let renamingRecIdx = -1;   // 正在改名的物品所在行
 function markRecDirty(field){ recDirty[field]=true; }
 
 function initRecPage() {
   editingRecIdx = -1;      // 离开过页面就收起编辑区，不留半截编辑状态
+  renamingRecIdx = -1;
   renderRecForm();
   applyFilters();
 }
@@ -1192,23 +1197,45 @@ function renderRecItemsManage() {
     panel.innerHTML = '<div class="rec-manage-empty">还没有物品</div>';
     return;
   }
-  panel.innerHTML = items.map((name, i) => `
-    <div class="rec-manage-row">
-      <span class="rec-manage-name" onclick="renameRecItem(${i})">${escapeHtml(name)}</span>
+  panel.innerHTML = items.map((name, i) => {
+    if (i === renamingRecIdx) {
+      // 就地改名：用自己的输入框，不依赖原生 prompt
+      // （iOS 加到主屏后以独立应用运行时，prompt 常常不弹，点了像没反应）
+      return `<div class="rec-manage-row">
+        <input class="rec-manage-input" id="rn_item_${i}" value="${escapeAttr(name)}"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();saveRecItemName(${i});}">
+        <button class="rec-manage-save" onclick="saveRecItemName(${i})">保存</button>
+        <button class="rec-manage-cancel" onclick="cancelRenameRecItem()">取消</button>
+      </div>`;
+    }
+    return `<div class="rec-manage-row">
+      <span class="rec-manage-name" onclick="startRenameRecItem(${i})">${escapeHtml(name)}</span>
       <span class="rec-manage-count">${counts[name] || 0} 条记录</span>
+      <button class="rec-edit-btn" onclick="startRenameRecItem(${i})">改名</button>
       <button class="rec-del-btn" onclick="deleteRecItemTag(${i})">删除</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
-function renameRecItem(idx) {
+function startRenameRecItem(idx) {
+  renamingRecIdx = (renamingRecIdx === idx) ? -1 : idx;
+  renderRecItemsManage();
+}
+
+function cancelRenameRecItem() {
+  renamingRecIdx = -1;
+  renderRecItemsManage();
+}
+
+// 改的是整类物品的名字：它名下所有历史记录一起改，否则记录会变成找不到归属的孤儿
+function saveRecItemName(idx) {
   const items = loadRecItems();
   const oldName = items[idx];
-  if (oldName === undefined) return;
-  const input = prompt(`重命名物品「${oldName}」`, oldName);
-  if (input === null) return;
-  const name = input.trim();
+  if (oldName === undefined) { renamingRecIdx = -1; renderRecItemsManage(); return; }
+  const el = document.getElementById('rn_item_' + idx);
+  const name = (el && el.value ? el.value : '').trim();
   if (!name) { showToast('名称不能为空'); return; }
-  if (name === oldName) return;
+  if (name === oldName) { renamingRecIdx = -1; renderRecItemsManage(); return; }
   if (items.includes(name)) { showToast('该物品已存在'); return; }
   items[idx] = name;
   saveRecItems(items);
@@ -1217,9 +1244,10 @@ function renameRecItem(idx) {
   records.forEach(r => { if (r.item === oldName) { r.item = name; hit++; } });
   if (hit) saveRecRecords(records);
   if (filterItem === oldName) filterItem = name;   // 筛选跟着改名，别把用户甩回空列表
+  renamingRecIdx = -1;
   renderRecForm();
   applyFilters();
-  showToast(`已重命名为「${name}」`, 'gold');
+  showToast(hit ? `已改名为「${name}」，${hit} 条记录一起改了` : `已改名为「${name}」`, 'gold');
 }
 
 function quickFilter(type) {
