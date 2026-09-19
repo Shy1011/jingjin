@@ -164,12 +164,13 @@
 
   /* Page 4: Records */
   .rec-form { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
-  .rec-form-row { display:flex; gap:8px; align-items:center; }
-  .rec-select { flex:1; padding:10px 12px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:14px; outline:none; -webkit-appearance:none; appearance:none; }
+  .rec-form-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .rec-form-row .rec-time-input { flex:1 1 100%; }
+  .rec-select { flex:1; min-width:0; padding:10px 12px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:14px; outline:none; -webkit-appearance:none; appearance:none; }
   .rec-select:focus { border-color:var(--accent); }
   .rec-count-input { width:80px; padding:10px 8px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:14px; text-align:center; outline:none; }
   .rec-count-input:focus { border-color:var(--accent); }
-  .rec-time-input { flex:1; padding:10px 10px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:13px; outline:none; }
+  .rec-time-input { flex:1; min-width:0; padding:10px 10px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:13px; outline:none; }
   .rec-time-input:focus { border-color:var(--accent); }
   .rec-add-btn { padding:12px; background:var(--accent); color:#000; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; }
   .rec-add-item-row { display:flex; gap:8px; margin-bottom:12px; }
@@ -185,6 +186,39 @@
   .rec-manage-name::after { content:'✏️'; font-size:11px; margin-left:6px; opacity:0.5; }
   .rec-manage-count { flex-shrink:0; font-size:11px; color:var(--muted); }
   .rec-manage-empty { font-size:12px; color:var(--muted); text-align:center; padding:8px 0; }
+  /* Record stats card */
+  .rec-stats { background:var(--card); border-radius:12px; padding:12px 14px; margin-bottom:14px; }
+  .rec-stats-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .rec-stats-title { font-size:13px; font-weight:700; color:var(--text); }
+  .rec-stats-toggle { padding:4px 10px; background:transparent; color:var(--muted); border:1px solid var(--undone); border-radius:6px; font-size:11px; cursor:pointer; }
+  .rec-stats-body { display:none; margin-top:12px; }
+  .rec-stats-body.show { display:block; }
+  .rec-stats-empty { font-size:12px; color:var(--muted); text-align:center; padding:10px 0; }
+  .rec-cmp-row { display:flex; align-items:baseline; gap:6px; }
+  .rec-cmp-num { font-size:22px; font-weight:800; color:var(--text); line-height:1; font-variant-numeric:tabular-nums; }
+  .rec-cmp-unit { font-size:12px; color:var(--muted); }
+  .rec-cmp-delta { margin-left:auto; font-size:12px; font-weight:700; color:var(--muted); }
+  .rec-cmp-delta.up { color:var(--accent); }
+  .rec-cmp-sub { font-size:11px; color:var(--muted); margin:6px 0 10px; }
+  .rec-bar-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+  .rec-bar-label { width:30px; flex-shrink:0; font-size:11px; color:var(--muted); }
+  .rec-bar-track { flex:1; height:9px; background:var(--undone); border-radius:5px; overflow:hidden; }
+  .rec-bar-fill { display:block; height:100%; border-radius:5px; background:var(--accent); transition:width 0.3s; }
+  .rec-bar-fill.last { background:#4b5563; }
+  .rec-bar-val { width:56px; flex-shrink:0; text-align:right; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .rec-chart-head { font-size:11px; color:var(--muted); margin-top:14px; }
+  .rec-chart { display:flex; align-items:flex-end; gap:2px; height:56px; margin-top:6px; }
+  .rec-chart .rec-col { flex:1; min-width:2px; background:var(--blue); border-radius:2px 2px 0 0; min-height:2px; }
+  .rec-chart .rec-col.now { background:var(--accent); }
+  .rec-chart-axis { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:4px; font-variant-numeric:tabular-nums; }
+  .rec-chart-foot { font-size:11px; color:var(--muted); margin-top:6px; }
+  /* Record inline edit */
+  .rec-item-actions { display:flex; gap:6px; }
+  .rec-edit-btn { padding:6px 10px; background:transparent; color:var(--blue); border:1px solid var(--blue); border-radius:6px; font-size:12px; cursor:pointer; }
+  .rec-edit-box { width:100%; display:flex; flex-direction:column; gap:8px; margin-top:6px; padding-top:10px; border-top:1px dashed var(--undone); }
+  .rec-edit-actions { display:flex; gap:8px; }
+  .rec-edit-save { flex:1; padding:9px; background:var(--accent); color:#000; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
+  .rec-edit-cancel { flex:1; padding:9px; background:transparent; color:var(--muted); border:1px solid var(--undone); border-radius:8px; font-size:13px; cursor:pointer; }
   .rec-list { display:flex; flex-direction:column; gap:6px; }
   .rec-item-card { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:12px 14px; background:var(--card); border-radius:10px; }
   .rec-item-icon { font-size:20px; flex-shrink:0; }
@@ -197,8 +231,8 @@
   .filter-bar { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
   .filter-select { width:100%; padding:8px 12px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:13px; outline:none; cursor:pointer; }
   .filter-select:focus { border-color:var(--accent); }
-  .filter-time-row { display:flex; gap:6px; align-items:center; }
-  .filter-date { flex:1; padding:8px 10px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:12px; outline:none; }
+  .filter-time-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .filter-date { flex:1 1 108px; min-width:0; padding:8px 10px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:12px; outline:none; }
   .filter-date:focus { border-color:var(--accent); }
   .filter-quick { padding:6px 10px; border-radius:8px; font-size:11px; font-weight:600; border:1px solid var(--undone); background:var(--card); color:var(--muted); cursor:pointer; white-space:nowrap; }
   .filter-quick.active { border-color:var(--blue); color:var(--blue); }
@@ -562,6 +596,7 @@
       </span>
     </div>
   </div>
+  <div class="rec-stats" id="recStats"></div>
   <div class="rec-list" id="recList"></div>
 </div>
 </div>
@@ -1067,12 +1102,14 @@ function loadRecRecords(){try{return JSON.parse(localStorage.getItem('rec_record
 function saveRecRecords(d){localStorage.setItem('rec_records',JSON.stringify(d));}
 let filterItem = '全部';
 let recListHidden = false;
+let recStatsOpen = localStorage.getItem('rec_stats_open') !== '0';   // 默认展开
 // 记录表单里用户亲手改过的字段，切走再回来不能给他清掉
 let recDirty = {count:false, time:false};
 let recManageOpen = false;
 function markRecDirty(field){ recDirty[field]=true; }
 
 function initRecPage() {
+  editingRecIdx = -1;      // 离开过页面就收起编辑区，不留半截编辑状态
   renderRecForm();
   applyFilters();
 }
@@ -1134,6 +1171,7 @@ function onFilterItemChange() {
 function applyFilters() {
   renderRecList();
   renderRecItemsManage();
+  renderRecStats();
 }
 
 // ===== RECORD ITEM MANAGER =====
@@ -1207,33 +1245,129 @@ function quickFilter(type) {
   applyFilters();
 }
 
+// ===== RECORD STATS（纯计算，不读存储、不碰 DOM，便于单测）=====
+function recPad(n){ return String(n).padStart(2,'0'); }
+function recDateStr(d){ return `${d.getFullYear()}-${recPad(d.getMonth()+1)}-${recPad(d.getDate())}`; }
+// 一律用本地时间构造，别用 new Date('2026-09-19')——那会被当成 UTC，国内时区差一天
+function recParseDate(s){ const p=String(s).split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+function recAddDays(s, n){ const d=recParseDate(s); d.setDate(d.getDate()+n); return recDateStr(d); }
+function recDayKey(time){ return String(time==null?'':time).slice(0,10); }
+function recDayDiff(a, b){ return Math.round((recParseDate(b)-recParseDate(a))/86400000); }
+// 一周从周一开始（和 quickFilter('week') 一致），offset 0 = 本周
+function recWeekRange(offset, baseDate){
+  const now = baseDate || new Date();
+  const day = now.getDay();
+  const monOffset = day === 0 ? -6 : 1 - day;
+  const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate()+monOffset+offset*7);
+  return { start: recDateStr(mon), end: recDateStr(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate()+6)) };
+}
+function recBucketMode(days){
+  if (days <= 31) return 'day';
+  if (days <= 190) return 'week';
+  return 'month';
+}
+function recBucketLabel(key, mode){
+  if (mode === 'month'){ const p = key.split('-'); return `${+p[0]}/${+p[1]}`; }
+  const p = key.split('-'); return `${+p[1]}/${+p[2]}`;
+}
+// 桶的 key：天 = YYYY-MM-DD，周 = 该周周一，月 = YYYY-MM
+function recBucketKey(dayKey, mode){
+  if (mode === 'day') return dayKey;
+  if (mode === 'month') return dayKey.slice(0,7);
+  const d = recParseDate(dayKey);
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1-day));
+  return recDateStr(d);
+}
+// 按桶聚合；空桶也补齐，保证时间轴连续
+function recBuckets(records, item, from, to, mode){
+  const sums = new Map(), counts = new Map();
+  records.forEach(r => {
+    if (item !== '全部' && r.item !== item) return;
+    const day = recDayKey(r.time);
+    if (!day || day < from || day > to) return;
+    const k = recBucketKey(day, mode);
+    sums.set(k, (sums.get(k)||0) + (Number(r.count)||0));
+    counts.set(k, (counts.get(k)||0) + 1);
+  });
+  const out = [];
+  if (mode === 'month'){
+    const last = to.slice(0,7);
+    let cur = from.slice(0,7), guard = 0;
+    while (cur <= last && guard++ < 400){
+      out.push({ key:cur, label:recBucketLabel(cur,mode), sum:sums.get(cur)||0, count:counts.get(cur)||0 });
+      const p = cur.split('-');
+      const nx = new Date(+p[0], +p[1], 1);
+      cur = `${nx.getFullYear()}-${recPad(nx.getMonth()+1)}`;
+    }
+  } else {
+    const step = mode === 'day' ? 1 : 7;
+    let cur = mode === 'day' ? from : recBucketKey(from,'week'), guard = 0;
+    while (cur <= to && guard++ < 400){
+      out.push({ key:cur, label:recBucketLabel(cur,mode), sum:sums.get(cur)||0, count:counts.get(cur)||0 });
+      cur = recAddDays(cur, step);
+    }
+  }
+  return out;
+}
+// 本周 / 上周（自然周，固定），只受物品筛选影响
+function recSummary(records, item, baseDate){
+  const pick = (range) => {
+    let sum = 0, count = 0;
+    records.forEach(r => {
+      if (item !== '全部' && r.item !== item) return;
+      const day = recDayKey(r.time);
+      if (day >= range.start && day <= range.end){ sum += Number(r.count)||0; count++; }
+    });
+    return { sum, count };
+  };
+  return { thisWeek: pick(recWeekRange(0, baseDate)), lastWeek: pick(recWeekRange(-1, baseDate)) };
+}
+// 趋势图的窗口：跟随日期筛选；只填一端或都没填时按下面的兜底
+function recStatsWindow(){
+  let startVal = document.getElementById('filterStart').value;
+  let endVal = document.getElementById('filterEnd').value;
+  let from, to, auto = false;
+  if (startVal && endVal){ from = startVal; to = endVal; }
+  else if (startVal){ from = startVal; to = recDateStr(new Date()); }
+  else if (endVal){ to = endVal; from = recAddDays(to, -29); }
+  else { to = recDateStr(new Date()); from = recAddDays(to, -29); auto = true; }
+  if (from > to){ const t = from; from = to; to = t; }
+  const days = recDayDiff(from, to) + 1;
+  return { from, to, days, mode: recBucketMode(days), auto };
+}
+
 function getFilteredRecords() {
   const records = loadRecRecords();
   const startVal = document.getElementById('filterStart').value;
   const endVal = document.getElementById('filterEnd').value;
-  let filtered = records;
-  if (filterItem !== '全部') {
-    filtered = filtered.filter(r => r.item === filterItem);
-  }
-  if (startVal) {
-    filtered = filtered.filter(r => r.time.slice(0, 10) >= startVal);
-  }
-  if (endVal) {
-    filtered = filtered.filter(r => r.time.slice(0, 10) <= endVal);
-  }
-  return filtered;
+  // 带上原始下标：编辑/删除都按它在原数组里的位置操作，
+  // 不再靠「物品+次数+时间」回查（两条内容完全相同的记录会删错）
+  const out = [];
+  records.forEach((rec, idx) => {
+    if (filterItem !== '全部' && rec.item !== filterItem) return;
+    const day = recDayKey(rec.time);
+    if (startVal && day < startVal) return;
+    if (endVal && day > endVal) return;
+    out.push({ rec, idx });
+  });
+  // 展示按记录时间从新到旧；时间相同时保持录入顺序（后录入的在上）
+  out.sort((a, b) => (a.rec.time === b.rec.time) ? (b.idx - a.idx) : (a.rec.time < b.rec.time ? 1 : -1));
+  return out;
 }
 
 function deleteRecord(idx) {
   const records = loadRecRecords();
-  const filtered = getFilteredRecords();
-  const target = filtered[idx];
-  const origIdx = records.findIndex(r => r.item === target.item && r.count === target.count && r.time === target.time);
-  if (origIdx >= 0) {
-    records.splice(origIdx, 1);
-    saveRecRecords(records);
-  }
+  const rec = records[idx];
+  if (!rec) { applyFilters(); return; }
+  const when = String(rec.time || '').replace('T', ' ').slice(0, 16);
+  if (!confirm(`删除这条记录？\n${rec.item} × ${rec.count} · ${when}\n此操作不可撤销。`)) return;
+  records.splice(idx, 1);
+  saveRecRecords(records);
+  if (editingRecIdx === idx) editingRecIdx = -1;
+  else if (editingRecIdx > idx) editingRecIdx--;
   applyFilters();
+  showToast('已删除');
 }
 
 function renderRecList() {
@@ -1293,18 +1427,134 @@ function renderRecList() {
     return;
   }
   const icons = {'运动':'🏃','跑步':'🏃','游泳':'🏊','骑车':'🚴','读书':'📖','学习':'📚','冥想':'🧘','喝水':'💧','吃药':'💊','日记':'📓'};
-  div.innerHTML = filtered.map((r, i) => {
-    const icon = icons[r.item] || '📌';
-    const t = r.time.replace('T', ' ').slice(0, 16);
+  div.innerHTML = filtered.map(({ rec, idx }) => {
+    const icon = icons[rec.item] || '📌';
+    const t = String(rec.time).replace('T', ' ').slice(0, 16);
+    const editing = idx === editingRecIdx;
     return `<div class="rec-item-card">
       <div class="rec-item-icon">${icon}</div>
-      <div class="rec-item-name">${r.item} × ${r.count}</div>
+      <div class="rec-item-name">${escapeHtml(rec.item)} × ${rec.count}</div>
       <div class="rec-item-meta">
         <span>${t}</span>
-        <button class="rec-del-btn" onclick="deleteRecord(${i})">删除</button>
+        <span class="rec-item-actions">
+          <button class="rec-edit-btn" onclick="editRecord(${idx})">${editing?'收起':'编辑'}</button>
+          <button class="rec-del-btn" onclick="deleteRecord(${idx})">删除</button>
+        </span>
       </div>
+      ${editing ? recEditBox(rec, idx) : ''}
     </div>`;
   }).join('');
+}
+
+// ===== RECORD INLINE EDIT =====
+let editingRecIdx = -1;
+
+function recEditBox(rec, idx){
+  const names = loadRecItems().slice();
+  // 孤儿数据（物品已从列表删除）把原名临时列出来，避免一保存就被静默改名
+  if (rec.item && !names.includes(rec.item)) names.push(rec.item);
+  const options = names.map(n => `<option value="${escapeAttr(n)}"${n===rec.item?' selected':''}>${escapeHtml(n)}</option>`).join('');
+  return `<div class="rec-edit-box">
+      <div class="rec-form-row">
+        <select class="rec-select" id="re_item_${idx}">${options}</select>
+        <input type="number" class="rec-count-input" id="re_count_${idx}" inputmode="numeric" min="1" value="${escapeAttr(rec.count)}">
+      </div>
+      <input type="datetime-local" class="rec-time-input" id="re_time_${idx}" value="${escapeAttr(rec.time)}">
+      <div class="rec-edit-actions">
+        <button class="rec-edit-save" onclick="saveRecordEdit(${idx})">保存</button>
+        <button class="rec-edit-cancel" onclick="cancelRecordEdit()">取消</button>
+      </div>
+    </div>`;
+}
+
+function editRecord(idx){
+  editingRecIdx = (editingRecIdx === idx) ? -1 : idx;   // 同一时刻只展开一条
+  renderRecList();
+}
+
+function cancelRecordEdit(){
+  editingRecIdx = -1;
+  renderRecList();
+}
+
+function saveRecordEdit(idx){
+  const records = loadRecRecords();
+  const rec = records[idx];
+  if (!rec){ editingRecIdx = -1; renderRecList(); return; }
+  const itemEl = document.getElementById('re_item_'+idx);
+  const cntEl = document.getElementById('re_count_'+idx);
+  const tmEl = document.getElementById('re_time_'+idx);
+  const item = itemEl ? itemEl.value : '';
+  const count = cntEl ? parseInt(cntEl.value, 10) : NaN;
+  const time = tmEl ? tmEl.value : '';
+  // 校验口径和新增记录保持一致；不通过就不动数据
+  if (!item) { showToast('请选择物品'); return; }
+  if (!count || count < 1) { showToast('请输入有效次数（正数）'); return; }
+  if (!time) { showToast('请设置时间'); return; }
+  rec.item = item; rec.count = count; rec.time = time;
+  saveRecRecords(records);
+  editingRecIdx = -1;
+  applyFilters();
+  showToast('已保存', 'gold');
+}
+
+// ===== RECORD STATS 渲染 =====
+function toggleRecStats(){
+  recStatsOpen = !recStatsOpen;
+  localStorage.setItem('rec_stats_open', recStatsOpen ? '1' : '0');
+  renderRecStats();
+}
+
+function renderRecStats(){
+  const box = document.getElementById('recStats');
+  if (!box) return;
+  const records = loadRecRecords();
+  const scope = filterItem === '全部' ? '全部物品' : filterItem;
+  const head = `<div class="rec-stats-head">
+      <span class="rec-stats-title">📊 统计 · ${escapeHtml(scope)}</span>
+      <button class="rec-stats-toggle" onclick="toggleRecStats()">${recStatsOpen?'收起':'展开'}</button>
+    </div>`;
+  if (!records.length){
+    box.innerHTML = head + '<div class="rec-stats-empty">还没有记录，先在下面记一条</div>';
+    return;
+  }
+  if (!recStatsOpen){ box.innerHTML = head; return; }
+
+  // 本周 vs 上周：自然周，固定，不受日期筛选影响
+  const s = recSummary(records, filterItem, new Date());
+  const tw = s.thisWeek, lw = s.lastWeek;
+  const diff = tw.sum - lw.sum;
+  let deltaCls = 'flat', deltaTxt = '— 持平';
+  if (!lw.sum) deltaTxt = tw.sum ? `上周无记录 · 多 ${tw.sum} 次` : '两周都没有记录';
+  else if (diff > 0){ deltaCls = 'up'; deltaTxt = `▲ +${Math.round(diff/lw.sum*100)}%`; }
+  else if (diff < 0){ deltaTxt = `▼ ${Math.round(diff/lw.sum*100)}%`; }
+  const maxW = Math.max(tw.sum, lw.sum, 1);
+  const barW = v => v <= 0 ? '0%' : `${Math.max(4, Math.round(v/maxW*100))}%`;
+  const cmp = `<div class="rec-cmp-row">
+      <span class="rec-cmp-num">${tw.sum}</span><span class="rec-cmp-unit">次 · 本周</span>
+      <span class="rec-cmp-delta ${deltaCls}">${deltaTxt}</span>
+    </div>
+    <div class="rec-cmp-sub">本周 ${tw.count} 条 · 上周 ${lw.sum} 次 / ${lw.count} 条（按自然周，周一为界）</div>
+    <div class="rec-bar-row"><span class="rec-bar-label">本周</span><span class="rec-bar-track"><span class="rec-bar-fill" style="width:${barW(tw.sum)}"></span></span><span class="rec-bar-val">${tw.sum} 次</span></div>
+    <div class="rec-bar-row"><span class="rec-bar-label">上周</span><span class="rec-bar-track"><span class="rec-bar-fill last" style="width:${barW(lw.sum)}"></span></span><span class="rec-bar-val">${lw.sum} 次</span></div>`;
+
+  // 趋势：窗口跟随日期筛选，未设时默认最近 30 天
+  const win = recStatsWindow();
+  const buckets = recBuckets(records, filterItem, win.from, win.to, win.mode);
+  const peak = buckets.reduce((m, b) => Math.max(m, b.sum), 0);
+  const total = buckets.reduce((a, b) => a + b.sum, 0);
+  const curKey = recBucketKey(recDateStr(new Date()), win.mode);
+  const cols = buckets.map(b =>
+    `<div class="rec-col${b.key===curKey?' now':''}" style="height:${b.sum<=0 ? 2 : Math.max(4, Math.round(b.sum/peak*100))}%" title="${b.label}：${b.sum} 次"></div>`
+  ).join('');
+  const modeTxt = {day:'按天', week:'按周', month:'按月'}[win.mode];
+  const unitTxt = {day:'天', week:'周', month:'个月'}[win.mode];
+  const chart = `<div class="rec-chart-head">趋势 · ${recBucketLabel(win.from,'day')} ~ ${recBucketLabel(win.to,'day')}（${modeTxt}${win.auto?'，未设日期筛选默认最近 30 天':''}）</div>
+    <div class="rec-chart">${cols}</div>
+    <div class="rec-chart-axis"><span>${recBucketLabel(win.from,'day')}</span><span>${recBucketLabel(win.to,'day')}</span></div>
+    <div class="rec-chart-foot">峰值 ${peak} 次 · 合计 ${total} 次 · 共 ${buckets.length} ${unitTxt}</div>`;
+
+  box.innerHTML = head + `<div class="rec-stats-body show">${cmp}${chart}</div>`;
 }
 
 function toggleRecList() {
@@ -1401,12 +1651,11 @@ function deleteAllFiltered() {
   const filtered = getFilteredRecords();
   if (!filtered.length) return;
   if (!confirm(`确定要删除当前筛选出的 ${filtered.length} 条记录？此操作不可撤销。`)) return;
-  let records = loadRecRecords();
-  // Build a set of JSON strings for O(1) lookup
-  const delSet = new Set(filtered.map(r => JSON.stringify(r)));
-  records = records.filter(r => !delSet.has(JSON.stringify(r)));
-  saveRecRecords(records);
-  renderRecList();
+  const kill = new Set(filtered.map(x => x.idx));   // 按原始下标精确删除
+  saveRecRecords(loadRecRecords().filter((r, i) => !kill.has(i)));
+  editingRecIdx = -1;
+  applyFilters();
+  showToast(`已删除 ${kill.size} 条记录`, 'gold');
 }
 </script>
 </body>
