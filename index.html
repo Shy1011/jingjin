@@ -176,6 +176,15 @@
   .rec-new-item { flex:1; padding:10px 12px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:14px; outline:none; }
   .rec-new-item:focus { border-color:var(--blue); }
   .rec-add-item-btn { padding:10px 14px; background:var(--blue); color:#000; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .rec-manage-btn { padding:8px 12px; background:transparent; color:var(--muted); border:1px solid var(--undone); border-radius:8px; font-size:12px; cursor:pointer; }
+  .rec-manage-btn.on { color:var(--accent); border-color:var(--accent); }
+  .rec-manage-panel { display:none; flex-direction:column; gap:6px; }
+  .rec-manage-panel.show { display:flex; }
+  .rec-manage-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--card); border-radius:10px; }
+  .rec-manage-name { flex:1; min-width:0; font-size:13px; font-weight:600; color:var(--text); overflow-wrap:anywhere; cursor:pointer; }
+  .rec-manage-name::after { content:'✏️'; font-size:11px; margin-left:6px; opacity:0.5; }
+  .rec-manage-count { flex-shrink:0; font-size:11px; color:var(--muted); }
+  .rec-manage-empty { font-size:12px; color:var(--muted); text-align:center; padding:8px 0; }
   .rec-list { display:flex; flex-direction:column; gap:6px; }
   .rec-item-card { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:12px 14px; background:var(--card); border-radius:10px; }
   .rec-item-icon { font-size:20px; flex-shrink:0; }
@@ -525,10 +534,12 @@
     </div>
     <div class="rec-form-row">
       <select class="rec-select" id="recSelect"></select>
-      <input type="number" class="rec-count-input" id="recCount" inputmode="numeric" placeholder="次数" min="1">
-      <input type="datetime-local" class="rec-time-input" id="recTime">
+      <input type="number" class="rec-count-input" id="recCount" inputmode="numeric" placeholder="次数" min="1" oninput="markRecDirty('count')">
+      <input type="datetime-local" class="rec-time-input" id="recTime" onchange="markRecDirty('time')">
     </div>
     <button class="rec-add-btn" onclick="addRecord()">记录</button>
+    <button class="rec-manage-btn" id="recManageToggle" onclick="toggleRecManage()">⚙️ 管理物品</button>
+    <div class="rec-manage-panel" id="recManagePanel"></div>
   </div>
   <div class="filter-bar">
     <select class="filter-select" id="filterSelect" onchange="onFilterItemChange()">
@@ -1056,21 +1067,32 @@ function loadRecRecords(){try{return JSON.parse(localStorage.getItem('rec_record
 function saveRecRecords(d){localStorage.setItem('rec_records',JSON.stringify(d));}
 let filterItem = '全部';
 let recListHidden = false;
+// 记录表单里用户亲手改过的字段，切走再回来不能给他清掉
+let recDirty = {count:false, time:false};
+let recManageOpen = false;
+function markRecDirty(field){ recDirty[field]=true; }
 
 function initRecPage() {
   renderRecForm();
   applyFilters();
 }
 
-function renderRecForm() {
+function renderRecForm(forceReset) {
   const items = loadRecItems();
   const sel = document.getElementById('recSelect');
+  const keep = sel.value;                       // 重建下拉框时保留已选物品
   sel.innerHTML = items.length ? '<option value="">-- 请选择 --</option>' + items.map(i => `<option value="${i}">${i}</option>`).join('') : '<option value="">-- 请先添加物品 --</option>';
-  // Set default time to now
-  const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  document.getElementById('recTime').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  document.getElementById('recCount').value = '';
+  if (keep && items.includes(keep)) sel.value = keep;
+  // 时间默认填「现在」、次数默认留空；但用户自己填过的内容要留着，
+  // 否则填到一半切去翻记录再回来就白填了（forceReset = 刚记录完，重置）
+  const cnt = document.getElementById('recCount'), tm = document.getElementById('recTime');
+  if (forceReset || !recDirty.time) {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    tm.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    recDirty.time = false;
+  }
+  if (forceReset || !recDirty.count) { cnt.value = ''; recDirty.count = false; }
 }
 
 function addRecItem() {
@@ -1083,6 +1105,7 @@ function addRecItem() {
   saveRecItems(items);
   inp.value = '';
   renderRecForm();
+  document.getElementById('recSelect').value = name;   // 新加的物品直接选上，省一次点击
   applyFilters();
   showToast('物品已添加', 'gold');
 }
@@ -1097,7 +1120,7 @@ function addRecord() {
   const records = loadRecRecords();
   records.unshift({ item, count, time });
   saveRecRecords(records);
-  renderRecForm();
+  renderRecForm(true);
   applyFilters();
   showToast('已记录', 'gold');
 }
@@ -1110,6 +1133,55 @@ function onFilterItemChange() {
 
 function applyFilters() {
   renderRecList();
+  renderRecItemsManage();
+}
+
+// ===== RECORD ITEM MANAGER =====
+function toggleRecManage() {
+  recManageOpen = !recManageOpen;
+  document.getElementById('recManageToggle').classList.toggle('on', recManageOpen);
+  renderRecItemsManage();
+}
+
+function renderRecItemsManage() {
+  const panel = document.getElementById('recManagePanel');
+  panel.classList.toggle('show', recManageOpen);
+  if (!recManageOpen) return;
+  const items = loadRecItems();
+  const counts = {};
+  loadRecRecords().forEach(r => { counts[r.item] = (counts[r.item] || 0) + 1; });
+  if (!items.length) {
+    panel.innerHTML = '<div class="rec-manage-empty">还没有物品</div>';
+    return;
+  }
+  panel.innerHTML = items.map((name, i) => `
+    <div class="rec-manage-row">
+      <span class="rec-manage-name" onclick="renameRecItem(${i})">${escapeHtml(name)}</span>
+      <span class="rec-manage-count">${counts[name] || 0} 条记录</span>
+      <button class="rec-del-btn" onclick="deleteRecItemTag(${i})">删除</button>
+    </div>`).join('');
+}
+
+function renameRecItem(idx) {
+  const items = loadRecItems();
+  const oldName = items[idx];
+  if (oldName === undefined) return;
+  const input = prompt(`重命名物品「${oldName}」`, oldName);
+  if (input === null) return;
+  const name = input.trim();
+  if (!name) { showToast('名称不能为空'); return; }
+  if (name === oldName) return;
+  if (items.includes(name)) { showToast('该物品已存在'); return; }
+  items[idx] = name;
+  saveRecItems(items);
+  const records = loadRecRecords();
+  let hit = 0;
+  records.forEach(r => { if (r.item === oldName) { r.item = name; hit++; } });
+  if (hit) saveRecRecords(records);
+  if (filterItem === oldName) filterItem = name;   // 筛选跟着改名，别把用户甩回空列表
+  renderRecForm();
+  applyFilters();
+  showToast(`已重命名为「${name}」`, 'gold');
 }
 
 function quickFilter(type) {
@@ -1311,29 +1383,18 @@ document.addEventListener('visibilitychange', function(){
 });
 window.addEventListener('pageshow', refreshDayState);
 
-function deleteRecItemTag(item) {
-  if (!confirm(`删除物品「${item}」及其所有记录？此操作不可撤销。`)) return;
-  let items = loadRecItems();
-  items = items.filter(i => i !== item);
-  saveRecItems(items);
-  let records = loadRecRecords();
-  records = records.filter(r => r.item !== item);
-  saveRecRecords(records);
+function deleteRecItemTag(idx) {
+  const items = loadRecItems();
+  const item = items[idx];
+  if (item === undefined) return;
+  const n = loadRecRecords().filter(r => r.item === item).length;
+  if (!confirm(`删除物品「${item}」及其 ${n} 条记录？此操作不可撤销。`)) return;
+  saveRecItems(items.filter(i => i !== item));
+  saveRecRecords(loadRecRecords().filter(r => r.item !== item));
   if (filterItem === item) filterItem = '全部';
   renderRecForm();
-  renderRecList();
-}
-
-function deleteItemCategory(item) {
-  if (!confirm(`删除物品「${item}」及其所有记录？此操作不可撤销。`)) return;
-  let items = loadRecItems();
-  items = items.filter(i => i !== item);
-  saveRecItems(items);
-  let records = loadRecRecords();
-  records = records.filter(r => r.item !== item);
-  saveRecRecords(records);
-  if (filterItem === item) filterItem = '全部';
-  renderRecList();
+  applyFilters();
+  showToast('已删除物品');
 }
 
 function deleteAllFiltered() {
