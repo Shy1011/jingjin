@@ -739,6 +739,7 @@ function renderItemManager(){
 function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function todayKey(){return dateKey(new Date());}
 let viewDate = null; // null = today
+let renderedDay = todayKey(); // 上次渲染时「今天」是哪天，用来做跨零点自检
 function viewKey(){return viewDate?dateKey(viewDate):todayKey();}
 function isViewingToday(){return !viewDate||dateKey(viewDate)===todayKey();}
 function prevDay(){if(!viewDate){viewDate=new Date();viewDate.setHours(0,0,0,0);}viewDate.setDate(viewDate.getDate()-1);renderCheckin();updateDateNav();}
@@ -746,6 +747,19 @@ function nextDay(){if(!viewDate){viewDate=new Date();viewDate.setHours(0,0,0,0);
 function goToday(){viewDate=null;renderCheckin();updateDateNav();}
 function onDateNav(val){if(!val){goToday();return;}const p=val.split('-');viewDate=new Date(+p[0],+p[1]-1,+p[2]);const t=new Date();t.setHours(0,0,0,0);if(viewDate>t){goToday();return;}renderCheckin();updateDateNav();}
 function updateDateNav(){const vd=viewDate||new Date();document.getElementById('dateNavInput').value=dateKey(vd);document.getElementById('dateNavInput').max=todayKey();document.getElementById('dateNext').disabled=dateKey(vd)>=todayKey();const isToday=isViewingToday();document.getElementById('pastHint').style.display=isToday?'none':'';document.getElementById('dateTodayBtn').style.display=isToday?'none':'';}
+// 应用常驻后台、或页面开着跨过零点时，「今天」已经变了，页面却还停在昨
+// 天的日期和勾选状态——这时点一下，写进去的其实是新一天的数据，看到和改到
+// 的对不上。回到前台 / 到点 / 页面恢复时各做一次自检。
+function refreshDayState(){
+  if(todayKey()===renderedDay) return;
+  renderCheckin();
+  updateDateNav();
+}
+function scheduleMidnightRefresh(){
+  const now=new Date();
+  const next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,3);
+  setTimeout(function(){ refreshDayState(); scheduleMidnightRefresh(); }, next-now);
+}
 function loadAll(){try{return JSON.parse(localStorage.getItem('checkins')||'{}');}catch{return{};}}
 function saveAll(d){localStorage.setItem('checkins',JSON.stringify(d));}
 function loadWeights(){try{return JSON.parse(localStorage.getItem('weights')||'{}');}catch{return{};}}
@@ -834,6 +848,7 @@ function renderCheckin(){
   }
   document.getElementById('weightSection').style.display=isToday?'':'none';
   document.querySelector('.reset-btn').style.display=isToday?'':'none';
+  renderedDay=todayKey();
 }
 
 // ===== DATA EXPORT/IMPORT =====
@@ -920,37 +935,102 @@ function switchBgTab(type) {
   document.querySelectorAll('.bg-panel').forEach(p=>p.classList.remove('show'));
   document.getElementById('bgPanel'+type[0].toUpperCase()+type.slice(1)).classList.add('show');
 }
-function applyBg(type, value) {
+function applyBgStyle(type, value) {
   const b=document.body;
   if(type==='color'){ b.style.backgroundImage=''; b.style.backgroundColor=value; }
   else { b.style.backgroundColor=''; b.style.backgroundImage=`url(${value})`; b.style.backgroundSize='cover'; b.style.backgroundPosition='center'; b.style.backgroundAttachment='fixed'; }
-  b.style.color=type==='color'&&value==='#0f0f0f'?'':'';
-  localStorage.setItem('bg_type',type);
-  localStorage.setItem('bg_value',value);
+}
+// 先写存储、成功了才换背景。存储写不进去（配额满）就退回原来的背景，
+// 保证「看到的」和「存下的」永远一致，而不是刷新一下又变回去。
+function applyBg(type, value) {
+  const prevType=localStorage.getItem('bg_type'), prevValue=localStorage.getItem('bg_value');
+  try {
+    localStorage.setItem('bg_type',type);
+    localStorage.setItem('bg_value',value);
+  } catch (err) {
+    try {
+      if(prevType===null) localStorage.removeItem('bg_type'); else localStorage.setItem('bg_type',prevType);
+      if(prevValue===null) localStorage.removeItem('bg_value'); else localStorage.setItem('bg_value',prevValue);
+    } catch (e) {}
+    applyBgStyle(prevType||'color', prevValue||'#0f0f0f');
+    showToast('背景太大，没能保存','gold');
+    return false;
+  }
+  applyBgStyle(type,value);
+  return true;
 }
 function loadBg() {
   const t=localStorage.getItem('bg_type'),v=localStorage.getItem('bg_value');
-  if(t&&v) applyBg(t,v);
+  if(t&&v) applyBgStyle(t,v);   // 启动时只上样式，不反写存储（避免配额已满时反复弹错）
 }
 function setBgColor(color) { applyBg('color',color); }
 function setBgUrl(url) {
   if(!url) return;
   const prev=document.getElementById('bgPreviewUrl');
-  prev.style.backgroundImage=`url(${url})`;
-  prev.classList.add('show');
-  applyBg('url',url);
+  if(applyBg('url',url)){
+    prev.style.backgroundImage=`url(${url})`;
+    prev.classList.add('show');
+    showToast('背景已设置','gold');
+  } else {
+    prev.style.backgroundImage='';
+    prev.classList.remove('show');
+  }
 }
-function setBgFile(e) {
+function readAsDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(new Error('读取失败'));
+    reader.readAsDataURL(file);
+  });
+}
+function loadImage(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error('解码失败'));
+    img.src=src;
+  });
+}
+// 手机原图动辄几 MB，直接塞进 localStorage 会撑爆配额（还会连累打卡数据存不下），
+// 所以先缩到最长边 1600px 再转 JPEG；仍然偏大就逐档降尺寸和质量。
+async function makeBgDataUrl(file){
+  const img=await loadImage(await readAsDataURL(file));
+  const tries=[[1600,0.82],[1280,0.72],[960,0.62]];
+  let out='';
+  for(const [maxSide,quality] of tries){
+    const scale=Math.min(1, maxSide/Math.max(img.width,img.height));
+    const w=Math.max(1,Math.round(img.width*scale)), h=Math.max(1,Math.round(img.height*scale));
+    const cv=document.createElement('canvas');
+    cv.width=w; cv.height=h;
+    const cx=cv.getContext('2d');
+    cx.fillStyle='#0f0f0f';            // 透明 PNG 落在深色底上，不会变成白块
+    cx.fillRect(0,0,w,h);
+    cx.drawImage(img,0,0,w,h);
+    out=cv.toDataURL('image/jpeg',quality);
+    if(out.length<=900*1024) break;     // 约 900KB 字符，给 localStorage 留足余量
+  }
+  return out;
+}
+async function setBgFile(e) {
   const f=e.target.files[0];
+  e.target.value='';                    // 允许再次选择同一张图
+  const pv=document.getElementById('bgPreviewFile');
   if(!f) return;
-  const reader=new FileReader();
-  reader.onload=function(ev){
-    const dataUrl=ev.target.result;
-    document.getElementById('bgPreviewFile').style.backgroundImage=`url(${dataUrl})`;
-    document.getElementById('bgPreviewFile').classList.add('show');
-    applyBg('file',dataUrl);
-  };
-  reader.readAsDataURL(f);
+  if(f.type && !/^image\//.test(f.type)){ showToast('请选择图片文件'); return; }
+  try {
+    const dataUrl=await makeBgDataUrl(f);
+    if(applyBg('file',dataUrl)){
+      pv.style.backgroundImage=`url(${dataUrl})`;
+      pv.classList.add('show');
+      showToast('背景已设置','gold');
+    } else {
+      pv.style.backgroundImage='';
+      pv.classList.remove('show');
+    }
+  } catch (err) {
+    showToast('这张图读取失败，换一张试试');
+  }
 }
 function resetBg() {
   localStorage.removeItem('bg_type');
@@ -1121,9 +1201,10 @@ function renderRecList() {
   const monthStart = `${now.getFullYear()}-${pad(now.getMonth()+1)}-01`;
   const monthEnd = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(new Date(now.getFullYear(), now.getMonth()+1, 0).getDate())}`;
   const yearStart = `${now.getFullYear()}-01-01`;
+  const yearEnd = `${now.getFullYear()}-12-31`;
   const isWeek = startVal === weekStart && endVal === weekEnd;
   const isMonth = startVal === monthStart && endVal === monthEnd;
-  const isYear = startVal === yearStart && endVal === '12-31';
+  const isYear = startVal === yearStart && endVal === yearEnd;
   const isAll = startVal === '' && endVal === '';
   document.querySelectorAll('.filter-quick').forEach(b => b.classList.remove('active'));
   if (isWeek) document.querySelectorAll('.filter-quick')[0].classList.add('active');
@@ -1216,7 +1297,7 @@ function initSched(){
   tickNow();
   requestAnimationFrame(scrollToNow);
   if(_schedTimer) clearInterval(_schedTimer);
-  _schedTimer=setInterval(function(){ if(document.visibilityState==='visible') tickNow(); }, 30000);
+  _schedTimer=setInterval(function(){ if(document.visibilityState==='visible'){ tickNow(); refreshDayState(); } }, 30000);
 }
 
 // ===== INIT =====
@@ -1224,6 +1305,11 @@ loadBg();
 renderCheckin();
 updateDateNav();
 initSched();
+scheduleMidnightRefresh();
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='visible') refreshDayState();
+});
+window.addEventListener('pageshow', refreshDayState);
 
 function deleteRecItemTag(item) {
   if (!confirm(`删除物品「${item}」及其所有记录？此操作不可撤销。`)) return;
