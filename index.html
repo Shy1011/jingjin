@@ -781,7 +781,16 @@ function toggle(id){
   else if(items.length&&today.length===items.length-1)showToast('只差最后一项，冲！');
 }
 function saveWeight(){const inp=document.getElementById('weightInput'),val=parseFloat(inp.value);if(isNaN(val)||val<=0)return;const w=loadWeights();w[todayKey()]=val;saveWeights(w);inp.value='';renderCheckin();}
-function resetToday(){const all=loadAll();all[todayKey()]=[];saveAll(all);renderCheckin();}
+function resetToday(){
+  const all=loadAll(),key=todayKey(),items=loadCheckinItems();
+  const doneCount=(all[key]||[]).filter(x=>items.some(it=>it.id===x)).length;
+  if(!doneCount){ showToast('今天还没有打卡'); return; }
+  if(!confirm(`确定清空今天已完成的 ${doneCount} 项打卡？此操作不可撤销。`)) return;
+  all[key]=[];
+  saveAll(all);
+  renderCheckin();
+  showToast('已重置今日');
+}
 function togglePast(id){const key=viewKey();const all=loadAll();if(!isViewingToday()&&!confirm(`确认修改 ${key} 的历史打卡记录？`))return;if(!all[key])all[key]=[];const i=all[key].indexOf(id);if(i>=0)all[key].splice(i,1);else all[key].push(id);saveAll(all);renderCheckin();updateDateNav();}
 function renderCheckin(){
   const key=viewKey(),isToday=isViewingToday(),all=loadAll(),items=loadCheckinItems();
@@ -1077,6 +1086,11 @@ function deleteRecord(idx) {
 
 function renderRecList() {
   const records = loadRecRecords();
+  // 物品被删光后，筛选条件不能停留在已经不存在的物品上
+  // （否则下拉框会回落到「全部物品」，列表却是空的）
+  if (filterItem !== '全部' && !records.some(r => r.item === filterItem)) {
+    filterItem = '全部';
+  }
   const filtered = getFilteredRecords();
   const div = document.getElementById('recList');
   div.style.display = recListHidden ? 'none' : '';
