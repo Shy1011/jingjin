@@ -165,13 +165,39 @@
   /* Page 4: Records */
   .rec-form { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
   .rec-form-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .rec-form-row .rec-time-input { flex:1 1 100%; }
+  .rec-form-row .rec-time-row { flex:1 1 100%; }
   .rec-select { flex:1; min-width:0; padding:10px 12px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:14px; outline:none; -webkit-appearance:none; appearance:none; }
   .rec-select:focus { border-color:var(--accent); }
   .rec-count-input { width:80px; padding:10px 8px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:14px; text-align:center; outline:none; }
   .rec-count-input:focus { border-color:var(--accent); }
-  .rec-time-input { flex:1; min-width:0; padding:10px 10px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:13px; outline:none; }
-  .rec-time-input:focus { border-color:var(--accent); }
+  /* 时间不再是原生 datetime-local：iOS 加到主屏后以独立应用运行时，
+     原生时间选择器常常不弹（和之前 prompt 不弹是同一类问题），改成自带选择器 */
+  .rec-time-row { display:flex; gap:8px; }
+  .rec-time-btn { flex:1; min-width:0; display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:13px; text-align:left; cursor:pointer; }
+  .rec-time-btn:focus { border-color:var(--accent); outline:none; }
+  .rec-time-text { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .rec-time-btn::after { content:'▾'; flex-shrink:0; color:var(--muted); font-size:11px; }
+  /* 时间选择面板 */
+  .sheet-mask { position:fixed; inset:0; background:rgba(0,0,0,0.65); display:none; align-items:flex-end; justify-content:center; z-index:1000; }
+  .sheet-mask.show { display:flex; }
+  body.sheet-open { overflow:hidden; }
+  .sheet { width:100%; max-width:520px; background:#161616; border-radius:16px 16px 0 0; padding:16px; padding-bottom:calc(16px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:14px; }
+  .sheet-title { font-size:14px; font-weight:700; text-align:center; }
+  .sheet-date { display:flex; align-items:center; gap:10px; background:var(--card); border-radius:10px; padding:8px 10px; }
+  .sheet-step { flex-shrink:0; width:38px; height:34px; background:transparent; border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; }
+  .sheet-step:active { border-color:var(--accent); color:var(--accent); }
+  .sheet-date-mid { flex:1; min-width:0; text-align:center; }
+  .sheet-date-text { display:block; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .sheet-date-hint { display:block; font-size:11px; color:var(--accent); margin-top:2px; }
+  .sheet-time { display:flex; align-items:center; justify-content:center; gap:8px; }
+  .sheet-time select { width:92px; padding:12px 6px; background:var(--card); border:1px solid var(--undone); border-radius:10px; color:var(--text); font-size:20px; font-weight:700; text-align:center; text-align-last:center; outline:none; font-variant-numeric:tabular-nums; }
+  .sheet-colon { font-size:20px; font-weight:700; color:var(--muted); }
+  .sheet-quick { display:flex; gap:6px; }
+  .sheet-quick button { flex:1; padding:8px 4px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--muted); font-size:12px; cursor:pointer; white-space:nowrap; }
+  .sheet-quick button:active { border-color:var(--blue); color:var(--blue); }
+  .sheet-actions { display:flex; gap:10px; }
+  .sheet-cancel { flex:1; padding:12px; background:transparent; color:var(--muted); border:1px solid var(--undone); border-radius:10px; font-size:14px; cursor:pointer; }
+  .sheet-ok { flex:2; padding:12px; background:var(--accent); color:#000; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; }
   .rec-add-btn { padding:12px; background:var(--accent); color:#000; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; }
   .rec-add-item-row { display:flex; gap:8px; margin-bottom:12px; }
   .rec-new-item { flex:1; padding:10px 12px; background:var(--card); border:1px solid var(--undone); border-radius:8px; color:var(--text); font-size:14px; outline:none; }
@@ -572,7 +598,11 @@
     <div class="rec-form-row">
       <select class="rec-select" id="recSelect"></select>
       <input type="number" class="rec-count-input" id="recCount" inputmode="numeric" placeholder="次数" min="1" oninput="markRecDirty('count')">
-      <input type="datetime-local" class="rec-time-input" id="recTime" onchange="markRecDirty('time')">
+      <div class="rec-time-row">
+        <button type="button" class="rec-time-btn" id="recTimeBtn" onclick="openTimePicker('recTimeBtn')">
+          <span class="rec-time-text">--</span>
+        </button>
+      </div>
     </div>
     <button class="rec-add-btn" onclick="addRecord()">记录</button>
     <button class="rec-manage-btn" id="recManageToggle" onclick="toggleRecManage()">⚙️ 管理物品</button>
@@ -682,6 +712,37 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- 时间选择面板：不依赖原生 datetime-local（iOS 独立应用下原生选择器常常不弹） -->
+<div class="sheet-mask" id="timeSheet" onclick="if(event.target===this)closeTimePicker()">
+  <div class="sheet">
+    <div class="sheet-title">选择时间</div>
+    <div class="sheet-date">
+      <button type="button" class="sheet-step" onclick="shiftTpDay(-1)">◀</button>
+      <div class="sheet-date-mid">
+        <span class="sheet-date-text" id="tpDateText">--</span>
+        <span class="sheet-date-hint" id="tpDateHint"></span>
+      </div>
+      <button type="button" class="sheet-step" onclick="shiftTpDay(1)">▶</button>
+    </div>
+    <div class="sheet-time">
+      <select id="tpHour" onchange="syncTp()"></select>
+      <span class="sheet-colon">:</span>
+      <select id="tpMin" onchange="syncTp()"></select>
+    </div>
+    <div class="sheet-quick">
+      <button type="button" onclick="quickTp('now')">现在</button>
+      <button type="button" onclick="quickTp(-60)">-1小时</button>
+      <button type="button" onclick="quickTp(-30)">-30分</button>
+      <button type="button" onclick="quickTp(-15)">-15分</button>
+      <button type="button" onclick="quickTp(-5)">-5分</button>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="sheet-cancel" onclick="closeTimePicker()">取消</button>
+      <button type="button" class="sheet-ok" onclick="confirmTimePicker()">确定</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ===== COMMON =====
@@ -1112,6 +1173,95 @@ let recManageOpen = false;
 let renamingRecIdx = -1;   // 正在改名的物品所在行
 function markRecDirty(field){ recDirty[field]=true; }
 
+// ===== 时间选择器（自带，不依赖原生 datetime-local）=====
+// iOS「加到主屏」以独立应用运行时，原生时间/日期选择器常常不弹，
+// 点了像没反应（和之前原生 prompt 不弹是同一类问题），所以全部自己做。
+let tpElId = null;      // 当前在编辑的时间按钮 id
+let tpDay = '';         // 'YYYY-MM-DD'
+let tpHh = 0, tpMm = 0;
+
+function recPad2(n){ return String(n).padStart(2,'0'); }
+function nowTimeStr(){ const n = new Date(); return `${recDateStr(n)}T${recPad2(n.getHours())}:${recPad2(n.getMinutes())}`; }
+// 'YYYY-MM-DDTHH:MM' → '今天 21:30' / '昨天 23:10' / '2026-10-01 08:00'
+function recTimeLabel(v){
+  const s = String(v || '');
+  if (s.length < 16) return '--';
+  const day = s.slice(0,10), hm = s.slice(11,16);
+  const diff = recDayDiff(recDateStr(new Date()), day);
+  const word = diff === 0 ? '今天' : diff === -1 ? '昨天' : diff === -2 ? '前天' : diff === 1 ? '明天' : null;
+  return `${word || day} ${hm}`;
+}
+function setTimeBtn(el, v){
+  if (!el) return;
+  el.dataset.value = v;
+  const txt = el.querySelector('.rec-time-text');
+  if (txt) txt.textContent = recTimeLabel(v);
+}
+
+function openTimePicker(elId){
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const val = el.dataset.value || nowTimeStr();
+  tpElId = elId;
+  tpDay = /^\d{4}-\d{2}-\d{2}$/.test(val.slice(0,10)) ? val.slice(0,10) : recDateStr(new Date());
+  tpHh  = parseInt(val.slice(11,13), 10); if (!(tpHh >= 0 && tpHh < 24)) tpHh = new Date().getHours();
+  tpMm  = parseInt(val.slice(14,16), 10); if (!(tpMm >= 0 && tpMm < 60)) tpMm = new Date().getMinutes();
+  const hs = document.getElementById('tpHour'), ms = document.getElementById('tpMin');
+  if (!hs.options.length){
+    for (let h = 0; h < 24; h++) hs.add(new Option(recPad2(h), String(h)));
+    for (let m = 0; m < 60; m++) ms.add(new Option(recPad2(m), String(m)));
+  }
+  hs.value = String(tpHh); ms.value = String(tpMm);
+  syncTp();
+  document.getElementById('timeSheet').classList.add('show');
+  document.body.classList.add('sheet-open');
+}
+
+function closeTimePicker(){
+  document.getElementById('timeSheet').classList.remove('show');
+  document.body.classList.remove('sheet-open');
+  tpElId = null;
+}
+
+// 从下拉框读回时分，并刷新日期行（文字 + 「今天/昨天」提示）
+function syncTp(){
+  const hs = document.getElementById('tpHour'), ms = document.getElementById('tpMin');
+  tpHh = parseInt(hs.value, 10) || 0;
+  tpMm = parseInt(ms.value, 10) || 0;
+  hs.value = String(tpHh); ms.value = String(tpMm);
+  const wd = '日一二三四五六'[recParseDate(tpDay).getDay()];
+  document.getElementById('tpDateText').textContent = `${tpDay} 周${wd}`;
+  const diff = recDayDiff(recDateStr(new Date()), tpDay);
+  document.getElementById('tpDateHint').textContent =
+    diff === 0 ? '今天' : diff === -1 ? '昨天' : diff === -2 ? '前天' :
+    diff === 1 ? '明天' : diff < 0 ? `${-diff} 天前` : `${diff} 天后`;
+}
+
+function shiftTpDay(n){ tpDay = recAddDays(tpDay, n); syncTp(); }
+
+function quickTp(kind){
+  const d = new Date();
+  if (kind === 'now'){ tpDay = recDateStr(d); tpHh = d.getHours(); tpMm = d.getMinutes(); }
+  else {
+    // 以当前选中的日期+时间为基准加减分钟，跨天自动进位
+    const base = recParseDate(tpDay);
+    base.setHours(tpHh, tpMm + Number(kind), 0, 0);
+    tpDay = recDateStr(base); tpHh = base.getHours(); tpMm = base.getMinutes();
+  }
+  document.getElementById('tpHour').value = String(tpHh);
+  document.getElementById('tpMin').value = String(tpMm);
+  syncTp();
+}
+
+function confirmTimePicker(){
+  const el = tpElId ? document.getElementById(tpElId) : null;
+  if (el){
+    setTimeBtn(el, `${tpDay}T${recPad2(tpHh)}:${recPad2(tpMm)}`);
+    if (tpElId === 'recTimeBtn') markRecDirty('time');   // 用户自己改过，切页不能清掉
+  }
+  closeTimePicker();
+}
+
 function initRecPage() {
   editingRecIdx = -1;      // 离开过页面就收起编辑区，不留半截编辑状态
   renamingRecIdx = -1;
@@ -1127,11 +1277,9 @@ function renderRecForm(forceReset) {
   if (keep && items.includes(keep)) sel.value = keep;
   // 时间默认填「现在」、次数默认留空；但用户自己填过的内容要留着，
   // 否则填到一半切去翻记录再回来就白填了（forceReset = 刚记录完，重置）
-  const cnt = document.getElementById('recCount'), tm = document.getElementById('recTime');
+  const cnt = document.getElementById('recCount'), tm = document.getElementById('recTimeBtn');
   if (forceReset || !recDirty.time) {
-    const now = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    tm.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    setTimeBtn(tm, nowTimeStr());
     recDirty.time = false;
   }
   if (forceReset || !recDirty.count) { cnt.value = ''; recDirty.count = false; }
@@ -1155,7 +1303,7 @@ function addRecItem() {
 function addRecord() {
   const item = document.getElementById('recSelect').value;
   const count = parseInt(document.getElementById('recCount').value);
-  const time = document.getElementById('recTime').value;
+  const time = document.getElementById('recTimeBtn').dataset.value || '';
   if (!item) { showToast('请选择物品'); return; }
   if (!count || count < 1) { showToast('请输入有效次数（正数）'); return; }
   if (!time) { showToast('请设置时间'); return; }
@@ -1487,7 +1635,11 @@ function recEditBox(rec, idx){
         <select class="rec-select" id="re_item_${idx}">${options}</select>
         <input type="number" class="rec-count-input" id="re_count_${idx}" inputmode="numeric" min="1" value="${escapeAttr(rec.count)}">
       </div>
-      <input type="datetime-local" class="rec-time-input" id="re_time_${idx}" value="${escapeAttr(rec.time)}">
+      <div class="rec-time-row">
+        <button type="button" class="rec-time-btn" id="re_time_${idx}" data-value="${escapeAttr(rec.time)}" onclick="openTimePicker('re_time_${idx}')">
+          <span class="rec-time-text">${escapeHtml(recTimeLabel(rec.time))}</span>
+        </button>
+      </div>
       <div class="rec-edit-actions">
         <button class="rec-edit-save" onclick="saveRecordEdit(${idx})">保存</button>
         <button class="rec-edit-cancel" onclick="cancelRecordEdit()">取消</button>
@@ -1514,7 +1666,7 @@ function saveRecordEdit(idx){
   const tmEl = document.getElementById('re_time_'+idx);
   const item = itemEl ? itemEl.value : '';
   const count = cntEl ? parseInt(cntEl.value, 10) : NaN;
-  const time = tmEl ? tmEl.value : '';
+  const time = tmEl ? (tmEl.dataset.value || '') : '';
   // 校验口径和新增记录保持一致；不通过就不动数据
   if (!item) { showToast('请选择物品'); return; }
   if (!count || count < 1) { showToast('请输入有效次数（正数）'); return; }
